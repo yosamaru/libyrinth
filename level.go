@@ -1,7 +1,5 @@
 package labyrinth
 
-import "database/sql/driver"
-
 // 等级操作
 type Level interface {
   DrawBackground(*Screen)
@@ -21,43 +19,101 @@ type BaseLevel struct {
 
 // 创建新的基础等级
 func NewBaseLevel(bg Cell) *BaseLevel {
-  return nil
+  level := BaseLevel{Entities: make([]Drawable, 0), bg: bg}
+  return &level
 }
 
 // 标号
 func (l *BaseLevel) Tick(ev Event) {
+  if ev.Type != EventNone {
+    for _, e := range l.Entities {
+      e.Tick(ev)
+    }
+  }
 
+  colls := make([]Physical, 0)
+  dynamics := make([]DynamicPhysical, 0)
+  for _, e := range l.Entities {
+    // TODO 没看懂
+    if p, ok := interface{}(e).(Physical); ok {
+      colls = append(colls, p)
+    }
+    if p, ok := interface{}(e).(DynamicPhysical); ok {
+      dynamics = append(dynamics, p)
+    }
+  }
+  jobs := make(chan DynamicPhysical, len(dynamics))
+  results := make(chan int, len(dynamics))
+  for w := 0; w <= len(dynamics)/3; w++ {
+    go checkCollisionsWorker(colles, jobs, results)
+  }
+  for _, p := range dynamics {
+    jobs <- p
+  }
+  close(jobs)
+  for r := 0; r < len(dynamics); r++ {
+    <-results
+  }
 }
 
 // 绘制背景
 func (l *BaseLevel) DrawBackground(s *Screen) {
-
+  for i, row := range s.canvas {
+    for j, _ := range row  {
+      s.canvas[i][j] = l.bg
+    }
+  }
 }
 
 // 画笔
 func (l *BaseLevel) Draw(s *Screen) {
-
+  offx, offy := s.offset()
+  s.setOffset(l.offsetx, l.offsety)
+  for _, e := range l.Entities {
+    e.Draw(s)
+  }
+  s.setOffset(offx, offy)
 }
 
 func (l *BaseLevel) AddEntity(d Drawable) {
-
+  l.Entities = append(l.Entities, d)
 }
 
 func (l *BaseLevel) RemoveEntity(d Drawable) {
-
+  for i, elem := range l.Entities {
+    if elem == d {
+      l.Entities = append(l.Entities[:i], l.Entities[i+1:]...)
+      return
+    }
+  }
 }
 
 // 位移
 func (l *BaseLevel) Offset() (int, int) {
-  return 0, 0
+  return l.offsetx, l.offsety
 }
 
 func (l *BaseLevel) SetOffset(x, y int) {
-
+  l.offsetx, l.offsety = x, y
 }
 
 func checkCollisionsWorker(ps []Physical, jobs <-chan DynamicPhysical, results chan<- int) {
-
+  for p := range jobs {
+    for _, c := range ps {
+      if c  == p {
+        continue
+      }
+      px, py := p.Position()
+      cx, cy := c.Position()
+      pw, ph := p.Size()
+      cw, ch := c.Size()
+      if px < cx+cw && px+pw > cx &&
+        py < cy+ch && py+ph > cy {
+          p.Collide(c)
+      }
+    }
+    results <- 1
+  }
 }
 
 

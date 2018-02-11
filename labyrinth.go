@@ -1,48 +1,106 @@
 package labyrinth
 
 import (
-	termbox "github.com/nsf/termbox-go"
+	"github.com/nsf/termbox-go"
 	"strings"
 )
 
-//幕布设计
+//幕布设计 2D平面
 type Canvas [][]Cell
 
 func NewCanvas(width, height int) Canvas {
-	return nil
+	canvas := make(Canvas, width)
+	for i := range canvas {
+		canvas[i] = make([]Cell, height)
+	}
+	return canvas
 }
 
 // 比较是否是同一个Canvas
-func (canvas *Canvas) equals(oldCanvas Canvas) bool {
-	return false
+func (canvas *Canvas) equals(oldCanvas *Canvas) bool {
+	c := *canvas
+	c2 := *oldCanvas
+	if c2 == nil {
+		return false
+	}
+
+	if len(c) != len(c2) {
+		return false
+	}
+
+	if len(c[0]) != len(c2[0]) {
+		return false
+	}
+
+	for i := range c {
+		for j := range c[i] {
+			equal := c[i][j].equals(&(c2[i][j]))
+			if !equal {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // 根据输入的信息创建新的Canvas
 func CanvasFromString(str string) Canvas {
-	return nil
+	lines := strings.Split(str, "\n")
+	runes := make([][]rune, len(lines))
+	width := 0
+	for i := range lines {
+		runes[i] = []rune(lines[i])
+		width = max(width, len(runes[i]))
+	}
+	height := len(runes)
+	canvas := make(Canvas, width)
+	for i := 0; i < width; i++ {
+		canvas[i] = make([]Cell, height)
+		for j := 0; j < height; j++ {
+			if i < len(runes[j]) {
+				canvas[i][j] = Cell{Ch: runes[j][i]}
+			}
+		}
+	}
+	return canvas
 }
 
 //创建绘制的接口
 type Drawable interface {
+	Tick(Event)
+	Draw(*Screen)
 }
 
 // 创建物理接口
 type Physical interface {
+	Position() (int, int)
+	Size() (int, int)
 }
 
 // 创建动态的physical
 type DynamicPhysical interface {
+	Position() (int, int)
+	Size() (int, int)
+	Collide(Physical)
 }
 
 //比较最小值
 func min(a, b int) int {
-	return 0
+	if a < b {
+		return a
+	}
+
+	return b
 }
 
 // 比较最大值
 func max(a, b int) int {
-	return 0
+	if a > b {
+		return a
+	}
+	return b
 }
+
 // 创建格子类型
 type Cell struct {
 	Fg Attr
@@ -50,9 +108,11 @@ type Cell struct {
 	Ch rune
 }
 
-// 设置每一个格子
+// Cell比较
 func (c *Cell) equals(c2 *Cell) bool {
-	return false
+	return c.Fg == c2.Fg &&
+		c.Bg == c2.Bg &&
+		c.Ch == c2.Ch
 }
 
 // 创建事件实体
@@ -67,19 +127,27 @@ type Event struct {
 }
 
 func convertEvent(ev termbox.Event) Event {
-	return Event{}
+	return Event{
+		Type:   EventType(ev.Type),
+		Key:    Key(ev.Key),
+		Ch:     ev.Ch,
+		Mod:    Modifier(ev.Mod),
+		Err:    ev.Err,
+		MouseX: ev.MouseX,
+		MouseY: ev.MouseY,
+	}
 }
 
 // 创建多个不同的类型
 type (
-	Attr      uint16
-	Key       uint16
-	Modifier  uint8
+	Attr uint16
+	Key uint16
+	Modifier uint8
 	EventType uint8
 )
 
 const (
-	EventKey EventType = iota
+	EventKey       EventType = iota
 	EventResize
 	EventMouse
 	EventError
@@ -101,15 +169,15 @@ const (
 )
 
 const (
-	ArrrBold Attr = 1 << (iota + 9)
+	ArrrBold      Attr = 1 << (iota + 9)
 	AttrUnderline
 	AttrReverse
 )
 
-const ModAltModifier  = 0x01
+const ModAltModifier = 0x01
 
 const (
-	KeyF1 Key = 0xFFFF - iota
+	KeyF1          Key = 0xFFFF - iota
 	KeyF2
 	KeyF3
 	KeyF4
