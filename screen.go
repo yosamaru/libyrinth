@@ -3,7 +3,6 @@ package labyrinth
 import "github.com/nsf/termbox-go"
 
 // 幕布 等级以及screen的基础信息
-
 type Screen struct {
 	oldCanvas Canvas
 	canvas    Canvas

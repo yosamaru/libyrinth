@@ -34,7 +34,7 @@ func (l *BaseLevel) Tick(ev Event) {
   colls := make([]Physical, 0)
   dynamics := make([]DynamicPhysical, 0)
   for _, e := range l.Entities {
-    // TODO 没看懂
+    // TODO 将值e转为空接口类型,并用comma-ok断言是不是指定的Physical类型
     if p, ok := interface{}(e).(Physical); ok {
       colls = append(colls, p)
     }
@@ -45,7 +45,7 @@ func (l *BaseLevel) Tick(ev Event) {
   jobs := make(chan DynamicPhysical, len(dynamics))
   results := make(chan int, len(dynamics))
   for w := 0; w <= len(dynamics)/3; w++ {
-    go checkCollisionsWorker(colles, jobs, results)
+    go checkCollisionsWorker(colls, jobs, results)
   }
   for _, p := range dynamics {
     jobs <- p

@@ -115,7 +115,7 @@ func (c *Cell) equals(c2 *Cell) bool {
 		c.Ch == c2.Ch
 }
 
-// 创建事件实体
+// 事件实体
 type Event struct {
 	Type   EventType
 	Key    Key

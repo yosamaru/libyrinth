@@ -10,30 +10,37 @@ type Rectangle struct {
 }
 
 func NewRectangle(x, y, w, h int, color Attr) *Rectangle {
-	return nil
+	r := Rectangle{x: x, y: y, width: w, height: h, color: color}
+	return &r
 }
 
 func (r *Rectangle) Draw(s *Screen) {
-
+	for i := 0; i < r.width; i++ {
+		for j := 0; j < r.height; j++ {
+			s.RenderCell(r.x+i, r.y+j, &Cell{Bg: r.color, Ch: ' '})
+		}
+	}
 }
 
 func (r *Rectangle) Tick(ev Event) {}
 
 func (r *Rectangle) Size() (int, int) {
-	return 0, 0
+	return r.width, r.height
 }
 
 func (r *Rectangle) Position() (int, int) {
-	return 0, 0
+	return r.x, r.y
 }
 
 func (r *Rectangle) SetPosition (x, y int) {
-
+	r.x = x
+	r.y = y
 }
 
 // 设置宽高
 func (r *Rectangle) SetSize(w, h int) {
-
+	r.width = w
+	r.height = h
 }
 
 func (r *Rectangle) Color() Attr {
@@ -41,5 +48,5 @@ func (r *Rectangle) Color() Attr {
 }
 
 func (r *Rectangle) SetColor(color Attr) {
-
+	r.color = color
 }
